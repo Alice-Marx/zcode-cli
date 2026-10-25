@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { appendFileSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -24,6 +25,8 @@ if (process.argv[2] === "--worker") {
 async function runWorker(archive) {
   assert.ok(archive, "Usage: node scripts/zcode-distribution-smoke.mjs <archive.tar.gz>");
   const directory = await realpath(await mkdtemp(join(tmpdir(), "zcode-release-smoke-")));
+  const ledger = join(directory, "owned-processes.jsonl");
+  await writeFile(ledger, "");
   // Windows 不能删除当前进程加载过的 .node DLL。只有 worker 加载发行包 node-pty；
   // 外层等待 worker 完全退出，再删除整个临时发行目录。
   const worker = spawn(
@@ -35,7 +38,11 @@ async function runWorker(archive) {
     },
   );
   const closed = once(worker, "close");
+  const ownedPids = new Set(Number.isInteger(worker.pid) ? [worker.pid] : []);
+  const ownedGroups = new Set(!isWindows && worker.pid ? [worker.pid] : []);
   let timer;
+  let workerError;
+  let outerCleanupError;
   try {
     const result = await Promise.race([
       closed,
@@ -44,23 +51,84 @@ async function runWorker(archive) {
       }),
     ]);
     assert.deepEqual(result, [0, null], "Distribution smoke worker failed");
+  } catch (error) {
+    workerError = error;
   } finally {
     clearTimeout(timer);
-    if (Number.isInteger(worker.pid) && isRunning(worker.pid)) {
-      const pids = await snapshotProcessTree(worker.pid);
-      if (isWindows) {
-        await exec("taskkill.exe", ["/PID", String(worker.pid), "/T", "/F"], { timeout: 10000 });
-      } else {
-        for (const pid of pids.reverse()) {
-          if (isRunning(pid)) process.kill(pid, "SIGKILL");
-        }
-      }
-      await closed;
+    const cleanupErrors = [];
+    // ledger 在 spawn 后同步追加，不依赖 worker 的 finally 或崩溃时尚未送达的 IPC。
+    // 即使 worker 已死，也独立检查这些本次创建的精确 PID 和进程组。
+    let records = [];
+    try {
+      records = (await readFile(ledger, "utf8")).split(/\r?\n/).filter(Boolean);
+    } catch (error) {
+      cleanupErrors.push(error);
     }
+    for (const line of records) {
+      try {
+        const record = JSON.parse(line);
+        assert.ok(Number.isInteger(record.pid) && record.pid > 0 && record.pid !== process.pid);
+        ownedPids.add(record.pid);
+        if (record.group && !isWindows) ownedGroups.add(record.pid);
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
+    }
+    try {
+      for (const pid of await snapshotProcessForest([...ownedPids])) ownedPids.add(pid);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+    for (const pid of ownedGroups) {
+      try {
+        process.kill(-pid, "SIGKILL");
+      } catch (error) {
+        if (error.code !== "ESRCH") cleanupErrors.push(error);
+      }
+    }
+    for (const pid of ownedPids) {
+      if (!isRunning(pid)) continue;
+      try {
+        if (isWindows) {
+          await exec("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { timeout: 10000 });
+        } else {
+          process.kill(pid, "SIGKILL");
+        }
+      } catch (error) {
+        if (isRunning(pid)) cleanupErrors.push(error);
+      }
+    }
+    await closed.catch((error) => cleanupErrors.push(error));
+    const end = Date.now() + 5000;
+    const groupsRunning = () => [...ownedGroups].filter((pid) => isRunning(-pid));
+    while (([...ownedPids].some(isRunning) || groupsRunning().length) && Date.now() < end)
+      await delay(100);
+    const survivors = [...ownedPids].filter(isRunning);
+    if (survivors.length)
+      cleanupErrors.push(new Error(`Outer cleanup left running PIDs: ${survivors}`));
+    if (groupsRunning().length)
+      cleanupErrors.push(new Error(`Outer cleanup left process groups: ${groupsRunning()}`));
     // 删除失败必须让整体退出失败，不把 DLL 锁或残留目录视作通过。
-    await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    try {
+      await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+    if (cleanupErrors.length) {
+      outerCleanupError = new AggregateError(
+        workerError ? [workerError, ...cleanupErrors] : cleanupErrors,
+        "Outer smoke cleanup failed",
+      );
+    }
   }
-  console.log(JSON.stringify({ cleanup: "worker exited and temporary release directory removed" }));
+  if (outerCleanupError) throw outerCleanupError;
+  console.log(
+    JSON.stringify({
+      cleanup:
+        "worker exited, recorded process trees verified and temporary release directory removed",
+    }),
+  );
+  if (workerError) throw workerError;
 }
 
 async function smoke(archive, directory) {
@@ -266,8 +334,7 @@ async function smoke(archive, directory) {
       cols: 110,
       rows: 32,
     });
-    trackedPids.add(child.pid);
-    if (!isWindows) processGroups.add(child.pid);
+    registerProcess(child.pid, !isWindows);
     let output = "";
     let finished = false;
     child.onData((data) => {
@@ -295,8 +362,7 @@ async function smoke(archive, directory) {
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    trackedPids.add(child.pid);
-    processGroups.add(child.pid);
+    registerProcess(child.pid, true);
     let output = "";
     child.stdout.on("data", (data) => {
       output += data;
@@ -340,7 +406,7 @@ async function smoke(archive, directory) {
       ],
       { stdio: ["ignore", "pipe", "pipe"] },
     );
-    trackedPids.add(watcher.pid);
+    registerProcess(watcher.pid);
     let output = "";
     let errors = "";
     watcher.stdout.on("data", (chunk) => {
@@ -368,8 +434,22 @@ async function smoke(archive, directory) {
 
   async function rememberTree(pid) {
     const pids = await snapshotProcessTree(pid);
-    for (const candidate of pids) trackedPids.add(candidate);
+    for (const candidate of pids) registerProcess(candidate);
     return pids;
+  }
+
+  function registerProcess(pid, group = false) {
+    assert.ok(Number.isInteger(pid) && pid > 0 && pid !== process.pid);
+    const known = trackedPids.has(pid);
+    const knownGroup = processGroups.has(pid);
+    trackedPids.add(pid);
+    if (group) processGroups.add(pid);
+    if (!known || (group && !knownGroup)) {
+      appendFileSync(
+        join(directory, "owned-processes.jsonl"),
+        `${JSON.stringify({ pid, group })}\n`,
+      );
+    }
   }
 
   async function assertProcessesExited(pids, label) {
@@ -412,7 +492,12 @@ function isRunning(pid) {
 }
 
 async function snapshotProcessTree(pid) {
-  if (!isRunning(pid)) return [];
+  return snapshotProcessForest([pid]);
+}
+
+async function snapshotProcessForest(pids) {
+  // Windows 保留存活子进程的 ParentProcessId，父已死时也从已登记根继续追踪。
+  // 仅按本次 ledger 中的具体 PID 扩展，不按名字、命令行或目录广泛匹配进程。
   const { stdout } = isWindows
     ? await exec(
         "powershell.exe",
@@ -431,7 +516,7 @@ async function snapshotProcessTree(pid) {
         .trim()
         .split(/\r?\n/)
         .map((line) => line.trim().split(/\s+/).map(Number));
-  const descendants = new Set([pid]);
+  const descendants = new Set(pids);
   for (let changed = true; changed; ) {
     changed = false;
     for (const [candidate, parent] of rows) {

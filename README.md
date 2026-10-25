@@ -43,13 +43,13 @@ node zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-open
 ```sh
 pnpm install --frozen-lockfile
 
+# 首次检出先构建 workspace 依赖；Agent 的源码入口会使用这些 dist 入口
+pnpm --filter @zcode/cli... build
+node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
+
 # 直接开发 Agent / TUI
 pnpm --filter @zcode/cli dev --help
 pnpm --filter @zcode/cli dev
-
-# 构建 CLI 及其 workspace 依赖
-pnpm --filter @zcode/cli... build
-node apps/zcode-cli/packages/cli/dist/zcode.cjs --help
 
 # 开发 Web：本机后端 + Vite
 pnpm dev:web
