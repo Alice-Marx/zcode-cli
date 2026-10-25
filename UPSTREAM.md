@@ -29,7 +29,7 @@ git remote add upstream https://github.com/zai-org/ZCode.git
 git fetch upstream
 ```
 
-The repository homepage links to upstream. This private standalone repository
-does not claim GitHub's native public-fork relationship. To update it, compare the
+The repository homepage links to upstream. This public standalone repository
+is not part of GitHub's native fork network. To update it, compare the
 pinned source commit to upstream, re-evaluate the workspace and asset closure,
 apply the relevant changes, and repeat the isolated distribution smoke tests.

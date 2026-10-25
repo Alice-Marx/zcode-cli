@@ -15,7 +15,7 @@ zcode app-server --stdio
 
 ## 下载与运行
 
-运行需要 Node.js 24.14.0 或更新的 Node 24，开发版本固定在 [mise.toml](mise.toml)。仓库默认为私有，因此下载 Release 请使用已登录的 GitHub CLI：
+运行需要 Node.js 24.14.0 或更新的 Node 24，开发版本固定在 [mise.toml](mise.toml)。仓库和 Release 均已公开，可直接下载[运行包](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/zcode-3.16.2.tar.gz)及 [SHA256 校验文件](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/sha256.txt)，也可以使用 GitHub CLI：
 
 ```sh
 gh release download v3.16.2 --repo Alice-Marx/zcode-cli \
@@ -63,7 +63,7 @@ pnpm dev:web
 
 `pnpm build:zcode` 依次构建 CLI/TUI、后端和 Web，收集 TUI 原生库、worker 和运行时依赖，再组装发行包。全新源码会先生成共享包产物；构建默认使用生产环境配置。
 
-下载根地址必须通过 `ZCODE_DIST_BASE_URL`（`.env`、`.env.local` 或环境变量）或 `--base-url` 设置。以下使用本仓库的实际 GitHub Release 资源地址；私有资源仍需要 GitHub 身份验证，普通下载用户可用上面的 `gh release download`：
+下载根地址必须通过 `ZCODE_DIST_BASE_URL`（`.env`、`.env.local` 或环境变量）或 `--base-url` 设置。以下使用本仓库公开的 GitHub Release 资源地址，下载方式见上文：
 
 ```sh
 pnpm build:zcode --base-url https://github.com/Alice-Marx/zcode-cli/releases/latest/download
