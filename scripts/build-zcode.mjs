@@ -104,6 +104,7 @@ function run(command, args, options = {}) {
   console.log(`[zcode] ${commandText(command, args)}`);
   const result = spawnSync(command, args, {
     cwd: root,
+    env: { ...process.env, ZCODE_ENV: process.env.ZCODE_ENV?.trim() || "production" },
     stdio: "inherit",
     ...options,
   });
