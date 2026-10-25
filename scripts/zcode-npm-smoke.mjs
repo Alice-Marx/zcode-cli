@@ -1,7 +1,7 @@
 // 通过真实 npm CLI 和全局命令 shim，在仓库外验收发布 tarball；不发送模型请求。
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const exec = promisify(execFile);
 const isWindows = process.platform === "win32";
+const npmInstallTimeout = 180000;
 const repository = await realpath(fileURLToPath(new URL("..", import.meta.url)));
 const tarballArgument = process.argv[2];
 assert.ok(tarballArgument, "Usage: npm run smoke:npm -- <package.tgz>");
@@ -88,12 +89,6 @@ try {
     false,
     "--ignore-scripts must leave the package runtime absent",
   );
-  await assertCommand(
-    fallback,
-    ["--version"],
-    (output) => assert.equal(output.trim(), fallback.metadata.version),
-    60000,
-  );
   const { runtimeCacheDirectory } = await import(
     pathToFileURL(join(fallback.packageRoot, "lib/runtime.mjs")).href
   );
@@ -106,6 +101,35 @@ try {
     within(directory, userRuntime),
     `Fallback runtime escaped isolated cache: ${userRuntime}`,
   );
+  // 冷首启执行与 postinstall 相同的校验和解包；Windows CI 正常安装已观测到约 116 秒。
+  const coldStarted = performance.now();
+  let coldCompleted = false;
+  let coldElapsedMs;
+  try {
+    await assertCommand(
+      fallback,
+      ["--version"],
+      (output) => assert.equal(output.trim(), fallback.metadata.version),
+      npmInstallTimeout,
+    );
+    coldCompleted = true;
+  } catch (error) {
+    coldElapsedMs = Math.round(performance.now() - coldStarted);
+    const diagnostics = await coldCacheDiagnostics(userRuntime).catch((diagnosticError) => ({
+      error: diagnosticError.message,
+    }));
+    console.error(JSON.stringify({ coldCacheDiagnostics: diagnostics }));
+    throw error;
+  } finally {
+    console.log(
+      JSON.stringify({
+        phase: "first-launch-user-cache",
+        elapsedMs: coldElapsedMs ?? Math.round(performance.now() - coldStarted),
+        timeoutMs: npmInstallTimeout,
+        result: coldCompleted ? "passed" : "failed",
+      }),
+    );
+  }
   await validateRuntime(userRuntime, fallback.payload);
   const firstReady = await stat(join(userRuntime, ".zcode-npm-runtime.json"));
   await assertCommand(fallback, ["--web", "--help"], assertWebHelp);
@@ -289,7 +313,35 @@ async function validateRuntime(root, payload) {
 }
 
 function runNpm(args) {
-  return run(process.execPath, [npmCli, ...args], { timeout: 180000 });
+  return run(process.execPath, [npmCli, ...args], { timeout: npmInstallTimeout });
+}
+
+async function coldCacheDiagnostics(root) {
+  const parent = dirname(root);
+  const siblings = await readdir(parent).catch((error) => {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  });
+  const staging = await Promise.all(
+    siblings
+      .filter((name) => name.startsWith(".zcode-npm-stage-"))
+      .map(async (name) => {
+        try {
+          const entries = await readdir(join(parent, name), {
+            recursive: true,
+            withFileTypes: true,
+          });
+          return { name, files: entries.filter((entry) => entry.isFile()).length };
+        } catch (error) {
+          return { name, error: error.code || error.message };
+        }
+      }),
+  );
+  return {
+    runtimeExists: await exists(root),
+    readyMarkerExists: await exists(join(root, ".zcode-npm-runtime.json")),
+    staging,
+  };
 }
 
 function run(command, args, options = {}) {
