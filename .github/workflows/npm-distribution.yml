@@ -1,0 +1,49 @@
+name: npm distribution
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/npm-distribution.yml'
+      - 'distribution/npm/**'
+      - 'scripts/build-npm.mjs'
+      - 'scripts/npm-command.mjs'
+      - 'scripts/zcode-npm-smoke.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-distribution-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+      - name: Install extraction library for fixture tests
+        run: npm ci --prefix distribution/npm --ignore-scripts --no-audit --no-fund
+      - name: Installer unit tests
+        run: npm test --prefix distribution/npm
+      - name: Build exact npm payload
+        run: npm run build:npm -- --download
+      - name: Review npm dry run
+        run: npm publish ./dist/npm/3.16.2/ljwei-stak-zcode-cli-3.16.2.tgz --access public --dry-run --json
+      - name: Install actual npm tgz and smoke TUI and Web
+        run: npm run smoke:npm -- ./dist/npm/3.16.2/ljwei-stak-zcode-cli-3.16.2.tgz
+      - name: Save npm artifact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-evidence-${{ runner.os }}
+          path: dist/npm/3.16.2/package-info.json
+          retention-days: 7

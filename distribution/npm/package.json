@@ -1,0 +1,53 @@
+{
+  "name": "@ljwei-stak/zcode-cli",
+  "version": "3.16.2",
+  "description": "Standalone ZCode TUI, local Web and Agent CLI without Electron; community extraction of zai-org/ZCode",
+  "type": "module",
+  "license": "Apache-2.0",
+  "bin": {
+    "zcode": "./bin/zcode.mjs"
+  },
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/postinstall.mjs",
+    "payload/",
+    "payload.json",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md",
+    "THIRD-PARTY-NOTICES.md",
+    "UPSTREAM.md"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/postinstall.mjs",
+    "test": "node --test test/runtime.test.mjs"
+  },
+  "dependencies": {
+    "tar": "7.5.22"
+  },
+  "bundledDependencies": [
+    "tar"
+  ],
+  "zcodeRuntime": {
+    "version": "3.16.2",
+    "sha256": "70e2ca3ab681605aa4b9503d1f8455f28ae3a6dc79488a1e988837b8992d78a6",
+    "url": "https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/zcode-3.16.2.tar.gz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alice-Marx/zcode-cli.git"
+  },
+  "homepage": "https://github.com/Alice-Marx/zcode-cli#readme",
+  "bugs": {
+    "url": "https://github.com/Alice-Marx/zcode-cli/issues"
+  },
+  "keywords": ["zcode", "cli", "tui", "coding-agent", "local-web"],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

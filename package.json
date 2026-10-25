@@ -17,7 +17,9 @@
     "test:distribution": "node --test scripts/zcode-distribution.test.mjs scripts/standalone.test.mjs scripts/installer-layout.test.mjs",
     "smoke:distribution": "node scripts/zcode-distribution-smoke.mjs",
     "architecture:check": "node scripts/architecture/architecture-check.mjs check",
-    "architecture:context": "node scripts/architecture/architecture-check.mjs context"
+    "architecture:context": "node scripts/architecture/architecture-check.mjs context",
+    "build:npm": "node scripts/build-npm.mjs",
+    "smoke:npm": "node scripts/zcode-npm-smoke.mjs"
   },
   "dependencies": {
     "border-beam": "^1.0.1",

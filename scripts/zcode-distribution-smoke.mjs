@@ -1,6 +1,7 @@
 // 在仓库外验证发行包，避免开发机 node_modules 掩盖缺失的 TUI/native/worker 依赖。
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { appendFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
@@ -14,16 +15,31 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const exec = promisify(execFile);
 const isWindows = process.platform === "win32";
 if (process.argv[2] === "--worker") {
-  await smoke(process.argv[3], await realpath(process.argv[4]));
+  const installedNpm = process.argv[3] === "--installed-npm";
+  await smoke(
+    installedNpm ? undefined : process.argv[3],
+    await realpath(process.argv[installedNpm ? 5 : 4]),
+    installedNpm ? await realpath(process.argv[4]) : undefined,
+  );
   // finally 已验证运行进程全部结束；专用 worker 正常退出以释放 ConPTY 原生线程和 DLL。
   await new Promise((done) => process.stdout.write("", done));
   process.exit(0);
 } else {
-  await runWorker(process.argv[2]);
+  await runWorker(
+    process.argv[2] === "--installed-npm"
+      ? { packageRoot: process.argv[3] }
+      : { archive: process.argv[2] },
+  );
 }
 
-async function runWorker(archive) {
-  assert.ok(archive, "Usage: node scripts/zcode-distribution-smoke.mjs <archive.tar.gz>");
+async function runWorker({ archive, packageRoot }) {
+  assert.ok(
+    archive || packageRoot,
+    "Usage: node scripts/zcode-distribution-smoke.mjs <archive.tar.gz> | --installed-npm <packageRoot>",
+  );
+  const source = packageRoot
+    ? ["--installed-npm", await realpath(packageRoot)]
+    : [resolve(archive)];
   const directory = await realpath(await mkdtemp(join(tmpdir(), "zcode-release-smoke-")));
   const ledger = join(directory, "owned-processes.jsonl");
   await writeFile(ledger, "");
@@ -31,7 +47,7 @@ async function runWorker(archive) {
   // 外层等待 worker 完全退出，再删除整个临时发行目录。
   const worker = spawn(
     process.execPath,
-    [fileURLToPath(import.meta.url), "--worker", resolve(archive), directory],
+    [fileURLToPath(import.meta.url), "--worker", ...source, directory],
     {
       stdio: "inherit",
       detached: !isWindows,
@@ -131,9 +147,9 @@ async function runWorker(archive) {
   if (workerError) throw workerError;
 }
 
-async function smoke(archive, directory) {
-  const root = join(directory, "zcode");
-  const runner = join(root, "bin/zcode.mjs");
+async function smoke(archive, directory, packageRoot) {
+  const root = packageRoot ? join(packageRoot, "runtime") : join(directory, "zcode");
+  const runner = join(packageRoot || root, "bin/zcode.mjs");
   const workspace = join(directory, "workspace");
   const env = {
     ...process.env,
@@ -147,10 +163,11 @@ async function smoke(archive, directory) {
   let socket;
   let terminal;
   let web;
+  let runtimeCheck;
   let smokeError;
   let smokeFailed = false;
   try {
-    await exec("tar", ["-xzf", resolve(archive), "-C", directory]);
+    if (archive) await exec("tar", ["-xzf", resolve(archive), "-C", directory]);
     await mkdir(workspace);
     await exec(process.execPath, [runner, "--help"], { cwd: workspace, env, timeout: 20000 });
     const version = (
@@ -159,11 +176,13 @@ async function smoke(archive, directory) {
     const require = createRequire(join(root, "package.json"));
     // 加载并实际 spawn，不能仅凭 require 成功宣称 Windows ConPTY 可运行。
     const pty = require("node-pty");
-    const runtimeCheck = join(root, "agent/check-tui.mjs");
+    const checkFile = join(root, `agent/check-tui-${randomUUID()}.mjs`);
     await writeFile(
-      runtimeCheck,
+      checkFile,
       'import { runTui } from "@zcode/tui"; if (typeof runTui !== "function") throw new Error("Missing TUI export"); console.log("tui-runtime-ok");',
+      { flag: "wx" },
     );
+    runtimeCheck = checkFile;
     const imported = await exec(process.execPath, [runtimeCheck], {
       cwd: workspace,
       env,
@@ -316,6 +335,14 @@ async function smoke(archive, directory) {
       await assertProcessesExited([...trackedPids], "Smoke cleanup");
     } catch (error) {
       cleanupErrors.push(error);
+    }
+    // npm 安装目录归调用者所有；仅删除本次创建的唯一检查文件。
+    if (runtimeCheck) {
+      try {
+        await rm(runtimeCheck, { force: true });
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
     }
     if (cleanupErrors.length) {
       if (smokeFailed) console.error("Additional smoke cleanup errors:", cleanupErrors);
