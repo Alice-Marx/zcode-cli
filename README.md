@@ -13,9 +13,21 @@ zcode app-server --stdio
 
 只有第一个参数为 `--web` 时才选择 Web。其他调用进入现有 Agent CLI；`--version` 显示发行版版本。TUI 和 Web 后端均在本机运行，模型服务按用户自己的 provider 配置访问。
 
-## 下载与运行
+## 安装与运行
 
-运行需要 Node.js 24.14.0 或更新的 Node 24，开发版本固定在 [mise.toml](mise.toml)。仓库和 Release 均已公开，可直接下载[运行包](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/zcode-3.16.2.tar.gz)及 [SHA256 校验文件](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/sha256.txt)，也可以使用 GitHub CLI：
+运行需要 Node.js 24.14.0 或更新的 Node 24，开发版本固定在 [mise.toml](mise.toml)。推荐安装公开的 [npm 包 `@ljwei-stak/zcode-cli`](https://www.npmjs.com/package/@ljwei-stak/zcode-cli)：
+
+```sh
+npm install --global @ljwei-stak/zcode-cli
+zcode
+zcode --web
+```
+
+npm 包包含完整 TUI、Web 和 Agent 运行资源，安装时不另行从 GitHub 下载。若安装脚本被禁用，首次启动会在用户可写缓存中准备资源；冷解包可能需要一段时间，后续启动复用已有资源。安装约需 500 MB，另预留 npm 缓存及临时解包空间。Linux x64、Windows x64 和 macOS arm64 的实际 npm 安装及原生 TUI/Web 验证已通过。
+
+### 手动下载
+
+仓库和 Release 均已公开，可直接下载[运行包](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/zcode-3.16.2.tar.gz)及 [SHA256 校验文件](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/sha256.txt)，也可以使用 GitHub CLI：
 
 ```sh
 gh release download v3.16.2 --repo Alice-Marx/zcode-cli \

@@ -26,3 +26,19 @@ The shell installer supports static-host and GitHub Release asset layouts, and c
 No model prompts were sent. Native runtime compatibility must be assessed by actual platform execution, not by the presence of cross-platform native assets. Source Computer Use and local Web task-aggregation limitations remain upstream behavior, as documented in README.md.
 
 Failure-path smoke validation also passed on Windows: terminating only the dedicated verification worker produced overall exit 1, while its recorded child process and temporary directory were removed by the outer coordinator. The final success run returned exit 0 and verified all recorded process trees before deleting its directory. The old pre-fix one-file test directory remains outside the repository because its separate deletion was denied by automatic approval.
+
+## npm package verification (2026-10-26)
+
+Published package: https://www.npmjs.com/package/@ljwei-stak/zcode-cli , version 3.16.2. The npm runtime archive is the pinned GitHub runtime above; its installer restores permissions and prepares immutable assets atomically, with a user-cache fallback if scripts are disabled. npm includes the pinned extraction library and its dependencies, so installation does not fetch an additional runtime from GitHub.
+
+Final npm CI: https://github.com/Alice-Marx/zcode-cli/actions/runs/40219513989 , source/test commit3c90e7d79c059936c0aef6780716204e473f1232. All three jobs succeeded:
+
+| Platform | Installer tests | Cold fallback extraction |
+| --- | --- | --- |
+| Linux x64 | 19 passed, 0 failed | 10.094 seconds |
+| macOS arm64 | 19 passed, 0 failed | 10.618 seconds |
+| Windows x64 | 18 passed, 1 POSIX-only skip, 0 failed | 99.562 seconds |
+
+Each platform installed the actual npm tgz into an isolated prefix containing spaces, verified generated zcode commands, rendered native TUI and local Web with exit codes0, checked HTML/API/workspace/WebSocket and process cleanup, and verified --ignore-scripts first-launch user cache and reuse. Windows initially exceeded a60-second test timeout; the bounded cold-preparation budget now matches the180-second npm install budget, with actual elapsed-time evidence. The candidate package bytes did not change for this test correction.
+
+npm candidate/published integrity: sha512-HBnQcDNdBIyyDxNvHTqnu9OyTrft5ayYs9u63tTz70+dg8NAsh1xRiVXU9XbHNBPtjLG49L/Kdig/75yGClOcg== . Anonymous Registry metadata returned HTTP200 and the exact integrity. The downloaded registry tarball matches the reviewed candidate's SHA25629e263c584e82580742b1ca3b19fb923254a764f814e8ff987b63fb4c55753f2 byte hash. Publication was accepted asynchronously; the package was only considered available once actual version3.16.2 and the latest tag were observable, rather than the temporary0.0.0-stage placeholder.
