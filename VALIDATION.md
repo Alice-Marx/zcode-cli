@@ -19,7 +19,7 @@ Local platform: Windows x64; Node.js 24.20.0; pnpm 10.33.2. Development/CI pin: 
 | Architecture changed scope | Passed, 0 violations |
 | Full architecture | One inherited issue: gen-ui-service lacks contract.test.ts in the pinned upstream tree; no baseline exemption added |
 
-The workflow provides a 6 GB Node heap for the full typecheck. Run 40175715163 validated the retained application build and real TUI/Web smoke on Linux and Windows with Node 24.14.0; the final documentation and smoke failure-cleanup revision will run the same workflow again. The initial run before the heap setting failed and is not counted as passed.
+The final [CI run 40176508658](https://github.com/Alice-Marx/zcode-cli/actions/runs/40176508658) passed on Linux x64 and Windows x64 for application/test commit `873a5f402e8cf186b548fde1722db30634d4c9e7`, using Node 24.14.0. Both platforms passed typecheck, lint, the complete CLI/TUI/server/Web build, real archive verification and isolated native TUI/Web smoke. Linux ran 15 regression tests successfully with one Windows-only skip; Windows ran 10 successfully with six POSIX-specific skips. Both TUI and Web exited with code 0. The workflow provides a 6 GB Node heap for the full typecheck.
 
 The shell installer supports static-host and GitHub Release asset layouts, and checks SHA256 before modifying an installation. Its POSIX behavior tests are explicitly skipped locally on Windows; the workflow exercises them on Linux. Local shell syntax/ordering checks passed using Git Bash.
 
