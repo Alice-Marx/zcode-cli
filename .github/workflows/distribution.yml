@@ -1,0 +1,55 @@
+name: Standalone distribution
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/distribution.yml'
+      - 'scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'packages/**'
+      - 'apps/zcode-cli/**'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      ZCODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@10.33.2
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile --reporter=append-only
+      - name: Check types
+        run: pnpm typecheck
+      - name: Lint retained application sources
+        run: pnpm lint
+      - name: Launcher and installer regression tests
+        run: pnpm test:distribution
+      - name: Build standalone runtime
+        run: pnpm build:zcode --base-url https://github.com/Alice-Marx/zcode-cli/releases/latest/download
+      - name: Verify real archive and metadata
+        run: pnpm test:distribution
+      - name: Smoke TUI and Web outside checkout
+        run: pnpm smoke:distribution dist/zcode/releases/3.16.2/zcode-3.16.2.tar.gz
+      - name: Save runtime
+        uses: actions/upload-artifact@v4
+        with:
+          name: zcode-${{ runner.os }}-${{ runner.arch }}
+          path: dist/zcode/
+          retention-days: 7
