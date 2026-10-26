@@ -1,3 +1,26 @@
+# 3.16.3 Windows login URL handoff
+
+The original Windows opener was reproduced against a real local browser/HTTP
+probe: only `appId` arrived, with `redirect` and `state` absent. The published
+BigModel frontend emits the reported redirect-failure message when it cannot
+build the callback URL. The maintained fix changes only Windows URL handoff;
+the CLI polling callback and account persistence contracts stay in place.
+
+Regression tests cover literal URL encoding, ampersands, percent escapes,
+Unicode and apostrophes; failed/timeout launchers; unchanged Linux/macOS
+argument vectors; and the actual Windows PowerShell parser with a side-effect
+stub in place of browser launch. This does not claim a real account consent or
+completed BigModel login. No user token or model request is used.
+
+Root typecheck and lint pass (lint: 0 errors). Full CLI lint was run and reports
+13 inherited max-lines failures in byte-identical HEAD files outside this fix;
+no lint exemption or architecture baseline was added. The relevant adapter,
+bootstrap and CLI login tests, current runtime/npm payload digests and platform
+CI references are recorded in the 3.16.3 release notes and dated export.
+
+The reports below describe the historical 3.16.2 extraction and npm release;
+their digests and platform evidence must not be attributed to 3.16.3.
+
 # Validation status (2026-10-25)
 
 Upstream: zai-org/ZCode@3c5b227649371507ddc4eb46ac5133afe6db1cab.

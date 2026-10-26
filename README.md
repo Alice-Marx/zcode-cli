@@ -13,6 +13,13 @@ zcode app-server --stdio
 
 只有第一个参数为 `--web` 时才选择 Web。其他调用进入现有 Agent CLI；`--version` 显示发行版版本。TUI 和 Web 后端均在本机运行，模型服务按用户自己的 provider 配置访问。
 
+## 3.16.3：Windows 登录修复
+
+修复自动打开 BigModel/Z.AI 登录页时 URL 查询参数被 `cmd start` 截断的问题。
+`redirect` 和 `state` 现在会完整交给系统浏览器；浏览器启动失败时保留手动打开提示。
+已经停留在“跳转失败”页面的用户，升级后重新运行 `/login bigmodel-coding-plan`，
+或复制终端显示的完整新链接到浏览器。账号授权仍由用户确认，不需要 Electron。
+
 ## 安装与运行
 
 运行需要 Node.js 24.14.0 或更新的 Node 24，开发版本固定在 [mise.toml](mise.toml)。推荐安装公开的 [npm 包 `@ljwei-stak/zcode-cli`](https://www.npmjs.com/package/@ljwei-stak/zcode-cli)：
@@ -23,23 +30,23 @@ zcode
 zcode --web
 ```
 
-npm 包包含完整 TUI、Web 和 Agent 运行资源，安装时不另行从 GitHub 下载。若安装脚本被禁用，首次启动会在用户可写缓存中准备资源；冷解包可能需要一段时间，后续启动复用已有资源。安装约需 500 MB，另预留 npm 缓存及临时解包空间。Linux x64、Windows x64 和 macOS arm64 的实际 npm 安装及原生 TUI/Web 验证已通过。
+npm 包包含完整 TUI、Web 和 Agent 运行资源，安装时不另行从 GitHub 下载。若安装脚本被禁用，首次启动会在用户可写缓存中准备资源；冷解包可能需要一段时间，后续启动复用已有资源。安装约需 500 MB，另预留 npm 缓存及临时解包空间。各平台实际安装验证与边界见 [VALIDATION.md](VALIDATION.md)。
 
 ### 手动下载
 
-仓库和 Release 均已公开，可直接下载[运行包](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/zcode-3.16.2.tar.gz)及 [SHA256 校验文件](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.2/sha256.txt)，也可以使用 GitHub CLI：
+仓库和 Release 均已公开，可直接下载[运行包](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.3/zcode-3.16.3.tar.gz)及 [SHA256 校验文件](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.3/sha256.txt)，也可以使用 GitHub CLI：
 
 ```sh
-gh release download v3.16.2 --repo Alice-Marx/zcode-cli \
-  --pattern 'zcode-3.16.2.tar.gz' --pattern sha256.txt
+gh release download v3.16.3 --repo Alice-Marx/zcode-cli \
+  --pattern 'zcode-3.16.3.tar.gz' --pattern sha256.txt
 ```
 
-Linux/macOS 可用 `sha256sum -c sha256.txt`，macOS 也可用 `shasum -a 256 -c sha256.txt`；PowerShell 用 `Get-FileHash ./zcode-3.16.2.tar.gz -Algorithm SHA256` 对照 `sha256.txt`。
+Linux/macOS 可用 `sha256sum -c sha256.txt`，macOS 也可用 `shasum -a 256 -c sha256.txt`；PowerShell 用 `Get-FileHash ./zcode-3.16.3.tar.gz -Algorithm SHA256` 对照 `sha256.txt`。
 
 解压后直接运行：
 
 ```sh
-tar -xzf zcode-3.16.2.tar.gz
+tar -xzf zcode-3.16.3.tar.gz
 node zcode/bin/zcode.mjs
 node zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-open
 ```
@@ -106,7 +113,7 @@ install.sh
 
 ```sh
 mkdir -p dist/zcode/debug
-tar -xzf dist/zcode/releases/3.16.2/zcode-3.16.2.tar.gz -C dist/zcode/debug
+tar -xzf dist/zcode/releases/3.16.3/zcode-3.16.3.tar.gz -C dist/zcode/debug
 node dist/zcode/debug/zcode/bin/zcode.mjs
 node dist/zcode/debug/zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-open
 ```
@@ -123,7 +130,7 @@ node dist/zcode/debug/zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-o
 pnpm typecheck
 pnpm lint
 pnpm test:distribution
-pnpm smoke:distribution dist/zcode/releases/3.16.2/zcode-3.16.2.tar.gz
+pnpm smoke:distribution dist/zcode/releases/3.16.3/zcode-3.16.3.tar.gz
 ```
 
 发行包 smoke 在仓库外、隔离的数据目录中验证原生 TUI 导入、实际渲染、键盘退出，以及 Web HTML、server-info、workspace、WebSocket 和退出，不发送模型请求。实际结果见 [VALIDATION.md](VALIDATION.md)。

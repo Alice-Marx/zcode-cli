@@ -63,3 +63,11 @@ packages. Review CLI/TUI/Web changes and rerun the extraction validations before
 advancing the real source pin. Check the Actions page for failures. Public
 repositories' inactive schedules can be disabled by GitHub; re-enable the
 workflow there if that occurs.
+
+## Maintained fixes after extraction
+
+Version 3.16.3 fixes the Windows browser handoff in the CLI OAuth adapter.
+The original unquoted `cmd start` call split authorization URLs at `&`, dropping
+redirect/state query fields. A profile-free PowerShell launcher now preserves
+the complete URL and reports launch failure/timeout. The existing provider,
+callback, polling, credential and account ownership contracts are retained.

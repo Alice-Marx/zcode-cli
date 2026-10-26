@@ -12,6 +12,9 @@ const exec = promisify(execFile);
 const isWindows = process.platform === "win32";
 const npmInstallTimeout = 180000;
 const repository = await realpath(fileURLToPath(new URL("..", import.meta.url)));
+const expectedPackageVersion = JSON.parse(
+  await readFile(join(repository, "distribution/npm/package.json"), "utf8"),
+).version;
 const tarballArgument = process.argv[2];
 assert.ok(tarballArgument, "Usage: npm run smoke:npm -- <package.tgz>");
 const tarball = await realpath(resolve(tarballArgument));
@@ -227,7 +230,7 @@ async function install(name, ignoreScripts) {
     "--no-audit",
     "--no-fund",
     `--ignore-scripts=${ignoreScripts}`,
-    ...(allowOwnPostinstall ? ["--allow-scripts=@ljwei-stak/zcode-cli@3.16.2"] : []),
+    ...(allowOwnPostinstall ? [`--allow-scripts=@ljwei-stak/zcode-cli@${expectedPackageVersion}`] : []),
     tarball,
   ]);
   const { stdout } = await runNpm(["root", "--global", "--prefix", prefix]);

@@ -35,15 +35,19 @@ jobs:
         run: npm ci --prefix distribution/npm --ignore-scripts --no-audit --no-fund
       - name: Installer unit tests
         run: npm test --prefix distribution/npm
+      - name: Download reviewed runtime candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download v3.16.3 --repo ${{ github.repository }} --pattern zcode-3.16.3.tar.gz --dir dist/zcode/releases/3.16.3
       - name: Build exact npm payload
         run: npm run build:npm -- --download
       - name: Review npm dry run
-        run: npm publish ./dist/npm/3.16.2/ljwei-stak-zcode-cli-3.16.2.tgz --access public --dry-run --json
+        run: npm publish ./dist/npm/3.16.3/ljwei-stak-zcode-cli-3.16.3.tgz --access public --dry-run --json
       - name: Install actual npm tgz and smoke TUI and Web
-        run: npm run smoke:npm -- ./dist/npm/3.16.2/ljwei-stak-zcode-cli-3.16.2.tgz
+        run: npm run smoke:npm -- ./dist/npm/3.16.3/ljwei-stak-zcode-cli-3.16.3.tgz
       - name: Save npm artifact evidence
         uses: actions/upload-artifact@v4
         with:
           name: npm-evidence-${{ runner.os }}
-          path: dist/npm/3.16.2/package-info.json
+          path: dist/npm/3.16.3/package-info.json
           retention-days: 7

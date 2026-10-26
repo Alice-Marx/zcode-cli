@@ -117,7 +117,14 @@ https://zcode.z.ai/api/v1
 1. Generate a local random `poll_token` with 32 random bytes encoded as hex.
 2. `POST /oauth/cli/init` with `Authorization: Bearer <poll_token>` and
    `{"provider":"zai"}`.
-3. Show `authorize_url` and try to open it in the system browser.
+3. Show `authorize_url` and try to open it in the system browser. The opener
+   must preserve the entire URL, including `redirect`/`redirect_uri`, `state`,
+   percent escapes, Unicode and shell metacharacters. Windows uses a
+   profile-free PowerShell `Start-Process` with an encoded command and a
+   single-quoted literal URL; it must not pass an unquoted URL to `cmd start`.
+   On Windows, report launcher failure or timeout instead of treating the
+   shell's `spawn` event as successful browser handoff. Manual copy/open and
+   `--no-browser` continue to work.
 4. Poll `GET /oauth/cli/poll/:flow_id` with the same authorization header.
 5. Continue while `status` is `pending`.
 6. On `ready`, persist credentials and patch non-sensitive model config.
@@ -176,25 +183,21 @@ stable identity, then resolves a Project Access Token before each HTTP attempt.
    with the biz login JWT and `{clientType: "zcode", clientVersion}`.
 6. Keep the Token in memory; persist only the stable user identity and OAuth source marker.
 
-`BigModel Coding Plan` uses a local callback server rather than the desktop app
-deeplink:
+`BigModel Coding Plan` uses the same server-mediated polling flow with
+`{"provider":"bigmodel"}`. Keep the server-provided browser authorization URL
+and callback unchanged, and poll with the original flow ID/poll token. The
+standalone CLI does not use a desktop deep link or ship a BigModel app secret.
+Resolve the returned business access token to project material and derive the
+stable connection identity from organization/project metadata, independent of
+the rotating Token. Persist the login session, identity and OAuth source marker.
 
-1. Bind an HTTP server to `127.0.0.1` on an ephemeral port.
-2. Generate `state`.
-3. Build the BigModel authorize URL with
-   `redirect=http://127.0.0.1:<port>/oauth/callback/bigmodel`,
-   `appId=zcode`, and `state`.
-4. Show the URL in the TUI/CLI and try to open it in the system browser.
-5. Accept callback query `authCode` or `code` plus `state`.
-6. Exchange the code through `https://bigmodel.cn/api/auth/tokenByAuthCode`.
-7. Use the returned access token to find or create `zcode-api-key`.
-8. Use its `apiKey` ID and login JWT to issue a Project Access Token; never call Copy.
-9. Derive a stable connection identity from organization/project metadata, independent
-   of the rotating Token. Persist the login session, identity and OAuth source marker.
-
-The callback server must validate state, return a short plain-text success or
-failure page, close after success/failure/timeout, and never listen on a public
-interface.
+Regression evidence (2026-10-26): the old Windows opener delivered only
+`appId=zcode` to a local HTTP browser probe, dropping `redirect` and `state` at
+the first `&`. BigModel's published frontend emits its reported redirect-failure
+message when it cannot build the callback URL. Tests must verify the literal
+Windows launch payload, launcher failure/timeout, unchanged macOS/Linux calls,
+and native Windows command-line parsing that retains every query field. No real account
+authorization or model request is needed for this transport regression.
 
 The manual API key options do not touch OAuth. In the TUI setup picker,
 selecting either manual API key option keeps the `Set Up Coding Plan` panel

@@ -48,10 +48,15 @@ jobs:
         run: pnpm lint
       - name: Build standalone runtime
         run: pnpm build:zcode --base-url https://github.com/Alice-Marx/zcode-cli/releases/latest/download
+      - name: Browser handoff and login regression tests
+        run: |
+          pnpm --filter @zcode/adapters exec vitest run tests/auth-browser.test.ts tests/auth.test.ts
+          pnpm --filter @zcode/bootstrap exec vitest run tests/auth-login.test.ts
+          pnpm --filter @zcode/cli exec node --import tsx --test tests/tui-login-polling.test.ts
       - name: Verify real archive and metadata
         run: pnpm test:distribution
       - name: Smoke TUI and Web outside checkout
-        run: pnpm smoke:distribution dist/zcode/releases/3.16.2/zcode-3.16.2.tar.gz
+        run: pnpm smoke:distribution dist/zcode/releases/3.16.3/zcode-3.16.3.tar.gz
       - name: Save runtime
         uses: actions/upload-artifact@v4
         with:
