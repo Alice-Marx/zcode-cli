@@ -10,7 +10,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const exec = promisify(execFile);
 const isWindows = process.platform === "win32";
-const npmInstallTimeout = 180000;
+const npmInstallTimeout = 300000;
 const repository = await realpath(fileURLToPath(new URL("..", import.meta.url)));
 const expectedPackageVersion = JSON.parse(
   await readFile(join(repository, "distribution/npm/package.json"), "utf8"),
@@ -53,6 +53,7 @@ Object.assign(env, {
   npm_config_update_notifier: "false",
 });
 const ownedPids = new Set();
+const livenessErrors = new Map();
 const ownedGroups = new Set();
 const childrenClosed = [];
 let smokeError;
@@ -104,7 +105,8 @@ try {
     within(directory, userRuntime),
     `Fallback runtime escaped isolated cache: ${userRuntime}`,
   );
-  // 冷首启执行与 postinstall 相同的校验和解包；Windows CI 正常安装已观测到约 116 秒。
+  // 冷首启执行与 postinstall 相同的校验和解包；慢速 Windows CI 在 180 秒时仍解出了
+  // 13,339 个文件，正常安装验证约 184 秒。保留有限的 300 秒预算，不复用普通 help 超时。
   const coldStarted = performance.now();
   let coldCompleted = false;
   let coldElapsedMs;
@@ -175,7 +177,7 @@ try {
     }
   }
   for (const pid of ownedPids) {
-    if (!isRunning(pid)) continue;
+    if (!isRunning(pid) || livenessErrors.has(pid)) continue;
     try {
       if (isWindows)
         await exec("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { timeout: 10000 });
@@ -191,7 +193,11 @@ try {
   while ((survivors().length || survivingGroups().length) && Date.now() < deadline)
     await delay(100);
   if (survivors().length)
-    cleanupErrors.push(new Error(`npm smoke left running PIDs: ${survivors()}`));
+    cleanupErrors.push(new Error(`npm smoke left running or unconfirmed PIDs: ${survivors()}`));
+  if (livenessErrors.size)
+    cleanupErrors.push(
+      new AggregateError([...livenessErrors.values()], "Process exit could not be confirmed"),
+    );
   if (survivingGroups().length)
     cleanupErrors.push(new Error(`npm smoke left process groups: ${survivingGroups()}`));
   // 仅删除本次 mkdtemp 目录；native worker 已退出，Windows 不再持有发行包 DLL。
@@ -230,7 +236,9 @@ async function install(name, ignoreScripts) {
     "--no-audit",
     "--no-fund",
     `--ignore-scripts=${ignoreScripts}`,
-    ...(allowOwnPostinstall ? [`--allow-scripts=@ljwei-stak/zcode-cli@${expectedPackageVersion}`] : []),
+    ...(allowOwnPostinstall
+      ? [`--allow-scripts=@ljwei-stak/zcode-cli@${expectedPackageVersion}`]
+      : []),
     tarball,
   ]);
   const { stdout } = await runNpm(["root", "--global", "--prefix", prefix]);
@@ -386,9 +394,19 @@ async function exists(path) {
 function isRunning(pid) {
   try {
     process.kill(pid, 0);
+    livenessErrors.delete(pid);
     return true;
   } catch (error) {
-    if (error.code === "ESRCH") return false;
+    if (error.code === "ESRCH") {
+      livenessErrors.delete(pid);
+      return false;
+    }
+    // Windows 终止中的句柄也可能报告 EPERM。保留为“未确认退出”，不把它当作已退出，
+    // 不尝试结束权限不明的进程，也不让探测异常覆盖原始验收失败。
+    if (error.code === "EPERM") {
+      livenessErrors.set(pid, error);
+      return true;
+    }
     throw error;
   }
 }
