@@ -111,6 +111,12 @@ node dist/zcode/debug/zcode/bin/zcode.mjs
 node dist/zcode/debug/zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-open
 ```
 
+## 上游更新通知
+
+[上游通知 Issue](https://github.com/Alice-Marx/zcode-cli/issues)由 [GitHub Actions](https://github.com/Alice-Marx/zcode-cli/actions/workflows/upstream-watch.yml) 每小时维护一次，也可在 Actions 页面手动运行。官方 `zai-org/ZCode` 的默认分支、新 Release（含预发布）、发行说明或安装资源有变化时，机器人会在固定 Issue 下追加评论，附上游链接和源码差异，提醒核对并更新本项目。Issue 分配给维护者，也可以点击 Subscribe 订阅后续评论。
+
+没有变化时不重复通知；监控运行在 GitHub，不需要本机或 Codex 开机。它只记录通知，不自动合并、安装或发布。真实抽取来源仍以 [upstream.json](upstream.json) 为准；机制与状态恢复见 [UPSTREAM.md](UPSTREAM.md#update-notifications)。
+
 ## 验证与边界
 
 ```sh

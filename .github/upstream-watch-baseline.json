@@ -1,0 +1,32 @@
+{
+  "branch": "main",
+  "head": "3c5b227649371507ddc4eb46ac5133afe6db1cab",
+  "commitDate": "2026-10-20T06:23:05Z",
+  "releases": [
+    {
+      "id": 395574116,
+      "tag": "v3.14.3",
+      "name": "v3.14.3",
+      "prerelease": false,
+      "publishedAt": "2026-09-24T10:54:12Z",
+      "updatedAt": "2026-09-24T10:54:12Z",
+      "notesHash": "46f26827b25d307548360bf432161fad605b471107327973e6b0ec7c29f4b98e",
+      "assets": [
+        {
+          "id": 585737214,
+          "name": "ZCode-3.14.3-win-x64.exe",
+          "size": 150014088,
+          "digest": "sha256:815721ad9888b03da2bba101faba7368896123849a6a82e3bc9e5fe5f3e5048b",
+          "updatedAt": "2026-09-24T10:43:14Z"
+        },
+        {
+          "id": 585743322,
+          "name": "ZCode-3.14.3-mac-arm64.dmg",
+          "size": 185386581,
+          "digest": "sha256:ce690b1acf5727d1474976f832cb99bf61bcd13d72118120244c0a4ccd4e156c",
+          "updatedAt": "2026-09-24T10:46:51Z"
+        }
+      ]
+    }
+  ]
+}

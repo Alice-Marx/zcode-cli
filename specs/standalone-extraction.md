@@ -13,3 +13,20 @@ The extracted architecture policy excludes Desktop-only modules. `plugin-ui/modu
 The generated shell installer requires latest.json.sha256 and verifies the downloaded archive before installation. Generic static-host layouts remain releases/<version>/<tarball>. GitHub Release download roots use sibling latest.json and tarball assets, matching real Release hosting. Private GitHub downloads use authenticated gh release download followed by extraction; the shell installer does not add credential storage.
 
 Validation: workspace closure, required files and no Electron dependency checks; launcher dispatch tests; source CLI build/help; standalone release build; extracted native TUI render and keyboard exit; local Web HTML/API/WebSocket/shutdown. Model requests are not sent during verification.
+
+## Repository upstream notifications
+
+GitHub Actions checks zai-org/ZCode hourly and on manual dispatch, independently
+of a local Codex session. It tracks the default branch and published releases
+(including prereleases, notes and asset changes). The existing upstream.json
+source pin remains the extraction baseline; monitoring never advances it or
+changes runtime code or published versions.
+
+A bot-owned tracking issue in Alice-Marx/zcode-cli records the current upstream
+state and whether the extraction has caught up. New upstream states add a
+deduplicated comment so notifications are visible in the repository. Unchanged
+checks make no issue/comment writes. Query errors fail the workflow without
+advancing state. State is stored in the tracking issue, with a committed initial
+snapshot for its first run. Comment creation precedes checkpoint updates, and
+retries detect an already posted comment. Only contents:read and issues:write
+are required; no personal token or upstream repository access is needed.

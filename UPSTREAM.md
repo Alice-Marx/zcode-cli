@@ -33,3 +33,33 @@ The repository homepage links to upstream. This public standalone repository
 is not part of GitHub's native fork network. To update it, compare the
 pinned source commit to upstream, re-evaluate the workspace and asset closure,
 apply the relevant changes, and repeat the isolated distribution smoke tests.
+
+## Update notifications
+
+The [upstream-watch workflow](.github/workflows/upstream-watch.yml) checks the
+upstream default branch and all published releases hourly, at minute 17 UTC,
+and supports manual dispatch. GitHub may delay scheduled runs. The workflow
+also runs when its implementation, initial snapshot or upstream.json changes.
+It runs on GitHub independently of local development tools and uses only the
+repository's automatic GITHUB_TOKEN, with contents:read and issues:write.
+
+One bot-owned tracking issue, assigned to Alice-Marx, shows upstream changes and
+the current extraction status. New commits, releases including prereleases,
+release-note edits and changed installation assets produce a deduplicated
+comment. No-change runs do not write comments or issue updates. To receive
+GitHub inbox/email notifications, subscribe to the issue using GitHub's normal
+notification settings. The issue and run logs remain visible in the repository.
+
+The committed `.github/upstream-watch-baseline.json` initializes the first run.
+Later checkpoints live in the tracking issue's machine-readable footer, not an
+expiring Actions cache. Keep that footer intact. If it is damaged, the workflow
+fails rather than silently resetting notification history. A failed comment
+does not advance state; if updating the footer fails after a successful comment,
+the next run detects the delivered event and avoids posting it again. Closing
+the issue pauses neither checking nor notification: a new event reopens it.
+
+Monitoring does not advance upstream.json, apply upstream code, or publish
+packages. Review CLI/TUI/Web changes and rerun the extraction validations before
+advancing the real source pin. Check the Actions page for failures. Public
+repositories' inactive schedules can be disabled by GitHub; re-enable the
+workflow there if that occurs.
