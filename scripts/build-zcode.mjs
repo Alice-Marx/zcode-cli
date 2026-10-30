@@ -3,7 +3,7 @@ import { loadEndpointEnv } from "./load-endpoint-env.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { basename, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { quoteArgsForWindowsShell, resolveSpawnRuntimeOptions } from "./spawn-command.mjs";
 
@@ -265,7 +265,12 @@ async function createTarball({ packageParent, releaseDir, tarballName }) {
   await rm(tarball, {
     force: true,
   });
-  run("tar", ["-czf", tarball, "-C", packageParent, packageDirName]);
+  // Windows 下 MSYS/Git-Bash 的 tar 会把 `F:\...` 这类绝对路径当作远端主机名
+  // （"Cannot connect to F: resolve failed"）。改为 cwd + 相对路径后，
+  // Linux/macOS/Windows 产出一致的归档内容。
+  run("tar", ["-czf", relative(packageParent, tarball), packageDirName], {
+    cwd: packageParent,
+  });
   return tarball;
 }
 

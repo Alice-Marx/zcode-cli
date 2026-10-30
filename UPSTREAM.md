@@ -4,8 +4,9 @@ This repository is an independent extraction of the command-line distribution
 from [zai-org/ZCode](https://github.com/zai-org/ZCode), maintained by Alice-Marx.
 It is not an official Z.AI release.
 
-- Source commit: [`3c5b227649371507ddc4eb46ac5133afe6db1cab`](https://github.com/zai-org/ZCode/commit/3c5b227649371507ddc4eb46ac5133afe6db1cab).
+- Source commit: [`a60ba6a7e5a06742270ca605f5d2cc2766afa7e1`](https://github.com/zai-org/ZCode/commit/a60ba6a7e5a06742270ca605f5d2cc2766afa7e1).
 - Extraction date: 2026-10-25.
+- Updated from upstream: 2026-10-30 (previous pin `3c5b227649371507ddc4eb46ac5133afe6db1cab`).
 - Upstream license: Apache-2.0. Original copyright, `LICENSE`, `NOTICE.md` and
   third-party notices are retained. Dependency licenses remain applicable.
 - Machine-readable package scope: [`upstream.json`](upstream.json).

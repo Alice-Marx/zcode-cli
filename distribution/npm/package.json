@@ -1,6 +1,6 @@
 {
   "name": "@ljwei-stak/zcode-cli",
-  "version": "3.16.3",
+  "version": "3.17.0",
   "description": "Standalone ZCode TUI, local Web and Agent CLI without Electron; community extraction of zai-org/ZCode",
   "type": "module",
   "license": "Apache-2.0",
@@ -33,9 +33,9 @@
     "tar"
   ],
   "zcodeRuntime": {
-    "version": "3.16.3",
-    "sha256": "99b6e98daf5851fd5b366408177774940ebd8cb3d271c36b4466aee9a4aea216",
-    "url": "https://github.com/Alice-Marx/zcode-cli/releases/download/v3.16.3/zcode-3.16.3.tar.gz"
+    "version": "3.17.0",
+    "sha256": "8fc8fbf2cc1e69def9cc94caa0ace1bef74c6d6298ef8aca378502a7782aa132",
+    "url": "https://github.com/Alice-Marx/zcode-cli/releases/download/v3.17.0/zcode-3.17.0.tar.gz"
   },
   "repository": {
     "type": "git",

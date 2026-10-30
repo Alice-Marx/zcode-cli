@@ -65,3 +65,44 @@ Final npm CI: https://github.com/Alice-Marx/zcode-cli/actions/runs/40219513989 ,
 Each platform installed the actual npm tgz into an isolated prefix containing spaces, verified generated zcode commands, rendered native TUI and local Web with exit codes 0, checked HTML/API/workspace/WebSocket and process cleanup, and verified --ignore-scripts first-launch user cache and reuse. Windows initially exceeded a 60-second test timeout; the bounded cold-preparation budget now matches the 180-second npm install budget, with actual elapsed-time evidence. The candidate package bytes did not change for this test correction.
 
 npm candidate/published integrity: sha512-HBnQcDNdBIyyDxNvHTqnu9OyTrft5ayYs9u63tTz70+dg8NAsh1xRiVXU9XbHNBPtjLG49L/Kdig/75yGClOcg== . Anonymous Registry metadata returned HTTP 200 and the exact integrity. The downloaded registry tarball matches the reviewed candidate's SHA256 `29e263c584e82580742b1ca3b19fb923254a764f814e8ff987b63fb4c55753f2` byte hash. Publication was accepted asynchronously; the package was only considered available once actual version 3.16.2 and the latest tag were observable, rather than the temporary 0.0.0-stage placeholder.
+
+# Validation status (2026-10-30) — upstream sync to a60ba6a7
+
+Upstream: zai-org/ZCode@a60ba6a7e5a06742270ca605f5d2cc2766afa7e1 (previous pin `3c5b227649371507ddc4eb46ac5133afe6db1cab`).
+Local platform: Windows x64; Node.js 24.20.0; pnpm 10.33.2. Development/CI pin: Node.js 24.14.0.
+
+In scope: 1 071 changed files updated from upstream, 472 new in-scope files added,
+1 720 upstream-deleted in-scope files removed, and two new workspace packages
+(`@zcode/zcode-site-plugin`, `@zcode/provider-regression`). The desktop, Android,
+web-share, dev-docs, e2e-report and docs trees stay excluded; no extraction-pruned
+file was resurrected and no fork adaptation was overwritten.
+
+| Check | Result |
+| --- | --- |
+| Root typecheck | Passed (exit 0, 6 GB heap) |
+| Root lint | Passed: 0 errors, 51 warnings |
+| Architecture check | Passed: 0 violations, after re-applying the extraction module exclusions |
+| Distribution tests | 17 tests: 10 passed, 1 failed, 6 skipped |
+| Maintained Windows OAuth fix | Passed: 9/9 in `apps/zcode-cli/packages/adapters/tests/auth-browser.test.ts` |
+
+The single distribution failure is `scripts/standalone.test.mjs:96`, which shells out
+to `tar -xOf <Windows drive path>`. This machine's MSYS GNU tar 1.35 rejects `F:`/`C:`
+as a remote host spec (`Cannot connect to F: resolve failed`). The failure reproduces
+in a bare temporary directory outside the repository and the test file is unchanged by
+this sync, so it is environmental, not a regression. The two Windows guards that the
+fork adds upstream of this file are intact and skip as documented: the SIGTERM runner
+shutdown test and the POSIX shell installer test.
+
+`architecture-policy.yaml`, `vitest.config.ts` and `scripts/zcode-distribution.test.mjs`
+carry fork-specific extraction adaptations (excluded-module removals, dropped desktop
+aliases, Windows process guards). These were re-applied on top of upstream's new content
+rather than overwritten, which is what restored the architecture check to 0 violations.
+
+`package.json` keeps the fork identity and minimal script set; upstream's dependency
+changes were merged in (`jsdom`, `yaml` added; `@vitest/coverage-v8` moved to
+`apps/zcode-cli`; the two new `patches/` entries for `@aiden0z/pptx-renderer` and
+`@extend-ai/react-xlsx`, both already depended on by retained packages). The lockfile
+was regenerated with `pnpm install`, recording the new workspace packages and patches.
+
+No model prompts were sent during validation.
+

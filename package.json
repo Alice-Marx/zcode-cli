@@ -1,6 +1,6 @@
 {
   "name": "zcode-cli-standalone",
-  "version": "3.16.3",
+  "version": "3.17.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -30,18 +30,19 @@
     "@jridgewell/trace-mapping": "0.3.31",
     "@tanstack/react-virtual": "^3.13.23",
     "@types/node": "^25.5.0",
-    "@vitest/coverage-v8": "^4.1.1",
     "@zcode/zcode-cua": "workspace:*",
     "concurrently": "^9.1.2",
     "dotenv": "^17.4.2",
     "istanbul-lib-instrument": "6.0.3",
+    "jsdom": "^29.1.1",
     "oxfmt": "^0.41.0",
     "oxlint": "^1.57.0",
     "postject": "1.0.0-alpha.6",
     "tsx": "^4.19.4",
     "turbo": "^2.4.0",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.1"
+    "vitest": "^4.1.1",
+    "yaml": "2.9.0"
   },
   "peerDependencies": {
     "@tanstack/react-virtual": "^3.13.23"
@@ -53,13 +54,16 @@
   "pnpm": {
     "overrides": {
       "react": "19.2.7",
-      "react-dom": "19.2.7"
+      "react-dom": "19.2.7",
+      "electron-to-chromium": "1.5.452"
     },
     "patchedDependencies": {
       "@radix-ui/react-collapsible@1.1.12": "patches/@radix-ui__react-collapsible@1.1.12.patch",
       "vitest@4.1.7": "patches/vitest@4.1.7.patch",
       "@ai-sdk/openai-compatible@2.0.60": "patches/@ai-sdk__openai-compatible@2.0.60.patch",
-      "@ai-sdk/anthropic@3.0.81": "patches/@ai-sdk__anthropic@3.0.81.patch"
+      "@ai-sdk/anthropic@3.0.81": "patches/@ai-sdk__anthropic@3.0.81.patch",
+      "@aiden0z/pptx-renderer@1.2.4": "patches/@aiden0z__pptx-renderer@1.2.4.patch",
+      "@extend-ai/react-xlsx@0.16.0": "patches/@extend-ai__react-xlsx@0.16.0.patch"
     }
   },
   "license": "Apache-2.0",

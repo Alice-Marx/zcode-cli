@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/zai-org/ZCode",
-  "commit": "3c5b227649371507ddc4eb46ac5133afe6db1cab",
-  "date": "2026-10-25",
+  "commit": "a60ba6a7e5a06742270ca605f5d2cc2766afa7e1",
+  "date": "2026-10-30",
   "includedWorkspacePackages": [
     "@zcode/adapters",
     "@zcode/android-emulator-plugin",

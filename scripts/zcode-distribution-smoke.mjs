@@ -4,10 +4,10 @@ import { execFile, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { appendFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, basename, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify, stripVTControlCharacters } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -167,7 +167,14 @@ async function smoke(archive, directory, packageRoot) {
   let smokeError;
   let smokeFailed = false;
   try {
-    if (archive) await exec("tar", ["-xzf", resolve(archive), "-C", directory]);
+    if (archive) {
+      // Windows 下 MSYS/Git-Bash 的 tar 会把 `F:\...` 这类绝对路径当作远端主机名
+      // （"Cannot connect to F: resolve failed"）。跨盘符时相对路径也无法表达，
+      // 因此先把归档复制进临时目录，再用纯文件名解包；Linux/macOS 行为不变。
+      const stagedArchive = join(directory, basename(resolve(archive)));
+      await cp(resolve(archive), stagedArchive);
+      await exec("tar", ["-xzf", basename(stagedArchive)], { cwd: directory });
+    }
     await mkdir(workspace);
     await exec(process.execPath, [runner, "--help"], { cwd: workspace, env, timeout: 20000 });
     const version = (

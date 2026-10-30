@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { test } from "node:test";
@@ -106,13 +106,18 @@ test("built release includes installable bin metadata, provenance, and independe
     return;
   }
   const archive = resolve(distribution, "releases", latest.version, latest.tarball);
-  const manifest = JSON.parse((await exec("tar", ["-xOf", archive, "zcode/package.json"])).stdout);
+  // Windows 下 MSYS/Git-Bash 的 tar 会把 `F:\...` 这类绝对路径当作远端主机名
+  // （"Cannot connect to F: resolve failed"）。改为 cwd + 纯文件名后，
+  // Linux/macOS/Windows 都能读取同一份归档，无需依赖 PATH 里的 tar 实现。
+  const archiveDirectory = dirname(archive);
+  const archiveName = basename(archive);
+  const manifest = JSON.parse((await exec("tar", ["-xOf", archiveName, "zcode/package.json"], { cwd: archiveDirectory })).stdout);
   assert.equal(manifest.version, latest.version);
   assert.deepEqual(manifest.bin, { zcode: "./bin/zcode.mjs" });
   assert.deepEqual(manifest.engines, { node: ">=24.14.0" });
   assert.equal(manifest.license, "Apache-2.0");
   assert.equal(manifest.homepage, "https://github.com/zai-org/ZCode");
-  const entries = new Set((await exec("tar", ["-tf", archive], { maxBuffer: 16 * 1024 * 1024 })).stdout.trim().split(/\r?\n/));
+  const entries = new Set((await exec("tar", ["-tf", archiveName], { cwd: archiveDirectory, maxBuffer: 16 * 1024 * 1024 })).stdout.trim().split(/\r?\n/));
   for (const file of [
     "bin/zcode.mjs", "agent/zcode.cjs", "agent/provider/zcode-builtin.json",
     "agent/node_modules/@zcode/tui/dist/index.js", "agent/node_modules/koffi/package.json",
