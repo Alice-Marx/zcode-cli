@@ -38,6 +38,10 @@ jobs:
           node-version: '24.14.0'
       - name: Install pinned pnpm
         run: npm install --global pnpm@10.33.2
+      # 版本号从根 package.json 读取，避免工作流里写死某个发行版本；换版本时只改 package.json 即可。
+      - name: Resolve release version
+        shell: bash
+        run: echo "ZCODE_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
       - name: Install workspace
         run: pnpm install --frozen-lockfile --reporter=append-only
       - name: Launcher and installer regression tests
@@ -56,7 +60,7 @@ jobs:
       - name: Verify real archive and metadata
         run: pnpm test:distribution
       - name: Smoke TUI and Web outside checkout
-        run: pnpm smoke:distribution dist/zcode/releases/3.16.3/zcode-3.16.3.tar.gz
+        run: pnpm smoke:distribution "dist/zcode/releases/${{ env.ZCODE_VERSION }}/zcode-${{ env.ZCODE_VERSION }}.tar.gz"
       - name: Save runtime
         uses: actions/upload-artifact@v4
         with:
