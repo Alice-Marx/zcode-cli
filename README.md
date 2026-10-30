@@ -13,6 +13,10 @@ zcode app-server --stdio
 
 只有第一个参数为 `--web` 时才选择 Web。其他调用进入现有 Agent CLI；`--version` 显示发行版版本。TUI 和 Web 后端均在本机运行，模型服务按用户自己的 provider 配置访问。
 
+## 3.17.1：版本号对齐上游 v3.17.1
+
+上游在同一个源码提交 `a60ba6a7` 上先后打了 v3.17.0 与 v3.17.1 两个标签。本仓库 3.17.1 与 3.17.0 的源码、运行时和功能完全相同，仅将版本号对齐上游，方便对照；新增能力见下一节。
+
 ## 3.17.0：同步上游 ZCode v3.17.1
 
 从上游 [zai-org/ZCode](https://github.com/zai-org/ZCode) 提交 `a60ba6a7` 同步 TUI、Agent、本地 Web 与服务端源码，新增上游的会话运行时生命周期、官方命令端点、MCP Node 回退、rewind/compact 等能力，并内置 Sites 插件与 provider 回归工具。抽取范围、排除项与来源固定见 [UPSTREAM.md](UPSTREAM.md)。
@@ -38,19 +42,19 @@ npm 包包含完整 TUI、Web 和 Agent 运行资源，安装时不另行从 Git
 
 ### 手动下载
 
-仓库和 Release 均已公开，可直接下载[运行包](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.17.0/zcode-3.17.0.tar.gz)及 [SHA256 校验文件](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.17.0/sha256.txt)，也可以使用 GitHub CLI：
+仓库和 Release 均已公开，可直接下载[运行包](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.17.1/zcode-3.17.1.tar.gz)及 [SHA256 校验文件](https://github.com/Alice-Marx/zcode-cli/releases/download/v3.17.1/sha256.txt)，也可以使用 GitHub CLI：
 
 ```sh
-gh release download v3.17.0 --repo Alice-Marx/zcode-cli \
-  --pattern 'zcode-3.17.0.tar.gz' --pattern sha256.txt
+gh release download v3.17.1 --repo Alice-Marx/zcode-cli \
+  --pattern 'zcode-3.17.1.tar.gz' --pattern sha256.txt
 ```
 
-Linux/macOS 可用 `sha256sum -c sha256.txt`，macOS 也可用 `shasum -a 256 -c sha256.txt`；PowerShell 用 `Get-FileHash ./zcode-3.17.0.tar.gz -Algorithm SHA256` 对照 `sha256.txt`。
+Linux/macOS 可用 `sha256sum -c sha256.txt`，macOS 也可用 `shasum -a 256 -c sha256.txt`；PowerShell 用 `Get-FileHash ./zcode-3.17.1.tar.gz -Algorithm SHA256` 对照 `sha256.txt`。
 
 解压后直接运行：
 
 ```sh
-tar -xzf zcode-3.17.0.tar.gz
+tar -xzf zcode-3.17.1.tar.gz
 node zcode/bin/zcode.mjs
 node zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-open
 ```
@@ -117,7 +121,7 @@ install.sh
 
 ```sh
 mkdir -p dist/zcode/debug
-tar -xzf dist/zcode/releases/3.17.0/zcode-3.17.0.tar.gz -C dist/zcode/debug
+tar -xzf dist/zcode/releases/3.17.1/zcode-3.17.1.tar.gz -C dist/zcode/debug
 node dist/zcode/debug/zcode/bin/zcode.mjs
 node dist/zcode/debug/zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-open
 ```
@@ -134,7 +138,7 @@ node dist/zcode/debug/zcode/bin/zcode.mjs --web --workspace . --port 3030 --no-o
 pnpm typecheck
 pnpm lint
 pnpm test:distribution
-pnpm smoke:distribution dist/zcode/releases/3.17.0/zcode-3.17.0.tar.gz
+pnpm smoke:distribution dist/zcode/releases/3.17.1/zcode-3.17.1.tar.gz
 ```
 
 发行包 smoke 在仓库外、隔离的数据目录中验证原生 TUI 导入、实际渲染、键盘退出，以及 Web HTML、server-info、workspace、WebSocket 和退出，不发送模型请求。实际结果见 [VALIDATION.md](VALIDATION.md)。
