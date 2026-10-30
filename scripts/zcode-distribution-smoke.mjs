@@ -532,6 +532,9 @@ async function snapshotProcessTree(pid) {
 async function snapshotProcessForest(pids) {
   // Windows 保留存活子进程的 ParentProcessId，父已死时也从已登记根继续追踪。
   // 仅按本次 ledger 中的具体 PID 扩展，不按名字、命令行或目录广泛匹配进程。
+  // 冷解包刚结束、TUI 与 Web 仍在运行时，PowerShell/CIM 初始化在负载下会明显变慢
+  // （本机空载约 1.5s，冒烟并发下曾超过 10s 被 SIGTERM 误判为失败）；按实测放宽预算，
+  // 不影响断言本身，也不改变发布载荷。
   const { stdout } = isWindows
     ? await exec(
         "powershell.exe",
@@ -541,9 +544,9 @@ async function snapshotProcessForest(pids) {
           "-Command",
           "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId | ConvertTo-Json -Compress",
         ],
-        { timeout: 10000 },
+        { timeout: 60000 },
       )
-    : await exec("ps", ["-eo", "pid=,ppid="], { timeout: 10000 });
+    : await exec("ps", ["-eo", "pid=,ppid="], { timeout: 60000 });
   const rows = isWindows
     ? JSON.parse(stdout).map((row) => [row.ProcessId, row.ParentProcessId])
     : stdout
